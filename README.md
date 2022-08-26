@@ -73,17 +73,7 @@ Send this payload to get all the bindnings, select the one above and use the ID 
 }
 ```
 
-Send the above mentioned payload to the server and it will return the result, you can use the eTag value to track responses from the server.
-
-```json
-{
-    "eTag": "00000000-0000-0000-0000-000000000000",
-    "body": {
-        "success": true,
-        "errors": [],
-        "returnValue": 2
-    }
-}
+Send this payload to the server and it will return the result, you can use the eTag value to track responses from the server.
 ```
 
 ## Contributing
