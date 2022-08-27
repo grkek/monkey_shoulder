@@ -1,12 +1,28 @@
 module MonkeyShoulder
   class Binding
     Log = ::Log.for(self)
+
     alias Annotations = MonkeyShoulder::Annotations
+    alias Registry = MonkeyShoulder::Registry
 
     property id : String
 
     def initialize(id : String)
       @id = Digest::SHA1.hexdigest([id, UUID.random.to_s].join("-"))
+    end
+
+    def settings?(key : String, default_value : JSON::Any = JSON::Any.new(nil))
+      bindings = Registry.instance.registered_bindings.reject do |binding|
+        binding.id != @id
+      end
+
+      binding = bindings.first
+
+      if value = binding.metadata.settings[key]?
+        value
+      else
+        default_value
+      end
     end
 
     macro inherited
@@ -210,6 +226,33 @@ module MonkeyShoulder
           end,
         {% end %}
       } {% if external_methods.empty? %} of String => Nil {% end %}
+
+      @[Annotations::BuiltInMethod]
+      def setting(key : String, value : JSON::Any)
+        bindings = Registry.instance.registered_bindings.reject do |binding|
+          binding.id != @id
+        end
+
+        binding = bindings.first
+
+        binding.metadata.settings[key] = value
+        binding.metadata.settings
+      end
+
+      @[Annotations::BuiltInMethod]
+      def settings(array : Array(Hash(String, JSON::Any)))
+        bindings = Registry.instance.registered_bindings.reject do |binding|
+          binding.id != @id
+        end
+
+        binding = bindings.first
+
+        array.each do |pair|
+          binding.metadata.settings[pair.keys.first] = pair.values.first
+        end
+
+        binding.metadata.settings
+      end
 
       def event_loop
         redis = Redis.new

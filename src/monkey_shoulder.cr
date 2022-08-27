@@ -19,10 +19,13 @@ module MonkeyShoulder
 
       {% for method in maintenance_methods %}
         method_name = {{method.name.stringify}}
-        args = {{method.args.map(&.stringify)}} of String
+        names = {{method.args.map(&.name.stringify)}} of String
+        restrictions = {{method.args.map(&.restriction.stringify)}} of String
 
-        args = args.map do |arg|
-          {"name" => arg.to_s.split(":").first.strip, "type" => arg.to_s.split(":").last.strip}
+        pairs = Hash.zip(names, restrictions)
+
+        args = pairs.map do |pair|
+          {"name" => pair.first, "type" => pair.last}
         end
 
         __maintenance_methods__[method_name] = args.as(Array(Hash(String, String)))
@@ -30,10 +33,13 @@ module MonkeyShoulder
 
       {% for method in built_in_methods %}
         method_name = {{method.name.stringify}}
-        args = {{method.args.map(&.stringify)}} of String
+        names = {{method.args.map(&.name.stringify)}} of String
+        restrictions = {{method.args.map(&.restriction.stringify)}} of String
 
-        args = args.map do |arg|
-          {"name" => arg.to_s.split(":").first.strip, "type" => arg.to_s.split(":").last.strip}
+        pairs = Hash.zip(names, restrictions)
+
+        args = pairs.map do |pair|
+          {"name" => pair.first, "type" => pair.last}
         end
 
         __built_in_methods__[method_name] = args.as(Array(Hash(String, String)))
@@ -41,10 +47,13 @@ module MonkeyShoulder
 
       {% for method in external_methods %}
         method_name = {{method.name.stringify}}
-        args = {{method.args.map(&.stringify)}} of String
+        names = {{method.args.map(&.name.stringify)}} of String
+        restrictions = {{method.args.map(&.restriction.stringify)}} of String
 
-        args = args.map do |arg|
-          {"name" => arg.to_s.split(":").first.strip, "type" => arg.to_s.split(":").last.strip}
+        pairs = Hash.zip(names, restrictions)
+
+        args = pairs.map do |pair|
+          {"name" => pair.first, "type" => pair.last}
         end
 
         __external_methods__[method_name] = args.as(Array(Hash(String, String)))

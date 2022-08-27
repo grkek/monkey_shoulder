@@ -20,6 +20,21 @@ class Mathematics < MonkeyShoulder::Binding
   def divide(a : Int32, b : Int32)
     a / b
   end
+
+  @[Annotations::BuiltInMethod]
+  def settings(array : Array(Hash(String, JSON::Any)))
+    bindings = MonkeyShoulder::Registry.instance.registered_bindings.reject do |binding|
+      binding.id != @id
+    end
+
+    binding = bindings.first
+
+    array.each do |pair|
+      binding.metadata.settings[pair.keys.first] = pair.values.first
+    end
+
+    binding.metadata.settings
+  end
 end
 
 Log.setup(:debug)
