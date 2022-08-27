@@ -1,7 +1,5 @@
 class HTTP::WebSocket
   class Protocol
-    property id : String = UUID.random.to_s
-
     def json(execution_tag, response)
       status = response.first
       body = response.last

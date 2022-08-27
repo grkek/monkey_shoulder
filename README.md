@@ -15,7 +15,7 @@ dependencies:
 ## Usage
 
 ```crystal
-require "monkey_shoulder"
+require "monkey_shoulder/application"
 
 class Mathematics < MonkeyShoulder::Binding
   @[Annotations::ExternalMethod]
