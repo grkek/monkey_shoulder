@@ -11,7 +11,11 @@ module MonkeyShoulder
       @id = Digest::SHA1.hexdigest([id, UUID.random.to_s].join("-"))
     end
 
-    def settings?(key : String, default_value : JSON::Any = JSON::Any.new(nil))
+    def update
+      Log.debug { "Update function called for #{@id}" }
+    end
+
+    def settings?(key : String, default_value = JSON::Any.new(nil))
       bindings = Registry.instance.registered_bindings.reject do |binding|
         binding.id != @id
       end
@@ -34,8 +38,51 @@ module MonkeyShoulder
         end
 
         {% if !@type.abstract? %}
+          __bind_built_in_methods__
           __build_helpers__
         {% end %}
+      end
+    end
+
+    macro __bind_built_in_methods__
+      @[Annotations::BuiltInMethod]
+      def setting(key : String, value : JSON::Any)
+        bindings = Registry.instance.registered_bindings.reject do |binding|
+          binding.id != @id
+        end
+
+        binding = bindings.first
+
+        binding.metadata.settings[key] = value
+
+        {% update_methods = @type.methods.select {|m| m.annotation(MonkeyShoulder::Annotations::UpdateMethod) } %}
+
+        {% for method in update_methods %}
+          {{@type.id}}.instance.{{method.name}}
+        {% end %}
+
+        binding.metadata.settings
+      end
+
+      @[Annotations::BuiltInMethod]
+      def settings(array : Array(Hash(String, JSON::Any)))
+        bindings = Registry.instance.registered_bindings.reject do |binding|
+          binding.id != @id
+        end
+
+        binding = bindings.first
+
+        array.each do |pair|
+          binding.metadata.settings[pair.keys.first] = pair.values.first
+        end
+
+        {% update_methods = @type.methods.select {|m| m.annotation(MonkeyShoulder::Annotations::UpdateMethod) } %}
+
+        {% for method in update_methods %}
+          {{@type.id}}.instance.{{method.name}}
+        {% end %}
+
+        binding.metadata.settings
       end
     end
 
@@ -100,7 +147,7 @@ module MonkeyShoulder
               return_value = {{@type.id}}.instance.{{method.name}}
             {% end %}
 
-            return_value || nil
+            return_value
           end,
         {% end %}
       } {% if maintenance_methods.empty? %} of String => Nil {% end %}
@@ -161,7 +208,7 @@ module MonkeyShoulder
               return_value = {{@type.id}}.instance.{{method.name}}
             {% end %}
 
-            return_value || nil
+            return_value
           end,
         {% end %}
       } {% if built_in_methods.empty? %} of String => Nil {% end %}
@@ -222,37 +269,10 @@ module MonkeyShoulder
               return_value = {{@type.id}}.instance.{{method.name}}
             {% end %}
 
-            return_value || nil
+            return_value
           end,
         {% end %}
       } {% if external_methods.empty? %} of String => Nil {% end %}
-
-      @[Annotations::BuiltInMethod]
-      def setting(key : String, value : JSON::Any)
-        bindings = Registry.instance.registered_bindings.reject do |binding|
-          binding.id != @id
-        end
-
-        binding = bindings.first
-
-        binding.metadata.settings[key] = value
-        binding.metadata.settings
-      end
-
-      @[Annotations::BuiltInMethod]
-      def settings(array : Array(Hash(String, JSON::Any)))
-        bindings = Registry.instance.registered_bindings.reject do |binding|
-          binding.id != @id
-        end
-
-        binding = bindings.first
-
-        array.each do |pair|
-          binding.metadata.settings[pair.keys.first] = pair.values.first
-        end
-
-        binding.metadata.settings
-      end
 
       def event_loop
         redis = Redis.new
