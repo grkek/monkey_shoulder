@@ -18,7 +18,7 @@ module MonkeyShoulder
       __external_methods__ = {} of String => Hash(String, Hash(String, String)) | Hash(String, String) | Array(Hash(String, String))
 
       {% for method in maintenance_methods %}
-        method_name = {{method.name.stringify}}
+        method_name = {{method.name.stringify}}.camelcase(lower: true)
         names = {{method.args.map(&.name.stringify)}} of String
         restrictions = {{method.args.map(&.restriction.stringify)}} of String
 
@@ -32,7 +32,7 @@ module MonkeyShoulder
       {% end %}
 
       {% for method in built_in_methods %}
-        method_name = {{method.name.stringify}}
+        method_name = {{method.name.stringify}}.camelcase(lower: true)
         names = {{method.args.map(&.name.stringify)}} of String
         restrictions = {{method.args.map(&.restriction.stringify)}} of String
 
@@ -46,7 +46,7 @@ module MonkeyShoulder
       {% end %}
 
       {% for method in external_methods %}
-        method_name = {{method.name.stringify}}
+        method_name = {{method.name.stringify}}.camelcase(lower: true)
         names = {{method.args.map(&.name.stringify)}} of String
         restrictions = {{method.args.map(&.restriction.stringify)}} of String
 

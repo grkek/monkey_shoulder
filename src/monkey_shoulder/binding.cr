@@ -102,7 +102,7 @@ module MonkeyShoulder
             {% index = index + 1 %}
           {% end %}
 
-          {{method.name.stringify}} => ->(json : JSON::Any) do
+          {{method.name.stringify}}.camelcase(lower: true) => ->(json : JSON::Any) do
             {% if args.size > 0 %}
 
               # Support argument lists
@@ -163,7 +163,7 @@ module MonkeyShoulder
             {% index = index + 1 %}
           {% end %}
 
-          {{method.name.stringify}} => ->(json : JSON::Any) do
+          {{method.name.stringify}}.camelcase(lower: true) => ->(json : JSON::Any) do
             {% if args.size > 0 %}
 
               # Support argument lists
@@ -224,7 +224,7 @@ module MonkeyShoulder
             {% index = index + 1 %}
           {% end %}
 
-          {{method.name.stringify}} => ->(json : JSON::Any) do
+          {{method.name.stringify}}.camelcase(lower: true) => ->(json : JSON::Any) do
             {% if args.size > 0 %}
 
               # Support argument lists
