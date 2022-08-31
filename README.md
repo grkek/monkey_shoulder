@@ -74,7 +74,7 @@ Send this payload to get all the bindnings, select the one above and use the ID 
 ```
 
 Send this payload to the server and it will return the result, you can use the eTag value to track responses from the server.
-```
+
 
 ## Contributing
 
