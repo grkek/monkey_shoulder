@@ -2,21 +2,46 @@ require "../src/application"
 
 module Linus
   class ZB18A < MonkeyShoulder::Binding
-    @brightness_level : Int32 = 0
-
-    @[Annotations::ExternalMethod]
-    def brightness_level
-      @brightness_level
-    end
-
     @[Annotations::ExternalMethod]
     def increase_brightness
-      @brightness_level += 1
+      brightness_level = setting?("brightnessLevel")
+
+      if brightness_level
+        current_level = brightness_level.as_i
+
+        if current_level >= 100
+          raise Exception.new("Can not set brightness level to more than 100")
+        end
+
+        actual_level = current_level + 1
+
+        setting("brightnessLevel", JSON::Any.new(actual_level))
+      else
+        setting("brightnessLevel", JSON::Any.new(1))
+
+        1
+      end
+    end
+  end
+end
+
+module Samsung
+  class TV1B1RD5 < MonkeyShoulder::Binding
+    @[Annotations::ExternalMethod]
+    def async_task
+      sleep(60)
+      puts "Async task has finished"
     end
 
     @[Annotations::ExternalMethod]
-    def decrease_brightness
-      @brightness_level -= 1
+    def off
+      setting("isOn", JSON::Any.new(false))
+      setting("isOff", JSON::Any.new(true))
+    end
+
+    @[Annotations::ExternalMethod]
+    def print(text : String)
+      puts text
     end
   end
 end

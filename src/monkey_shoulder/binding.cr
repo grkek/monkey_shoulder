@@ -8,25 +8,39 @@ module MonkeyShoulder
     property id : String
 
     def initialize(id : String)
-      @id = Digest::SHA1.hexdigest([id, UUID.random.to_s].join("-"))
+      @id = Digest::SHA1.hexdigest(id)
+
+      spawn do
+        loop do
+          settings = connection do |redis|
+            next redis.get(@id)
+          end
+
+          bindings = Registry.instance.registered_bindings.reject do |binding|
+            binding.id != @id
+          end
+
+          if bindings.size != 0
+            binding = bindings.first
+
+            if settings
+              binding.metadata.settings = JSON.parse(settings).as_h
+            else
+              connection do |redis|
+                redis.set(@id, binding.metadata.settings.to_json)
+              end
+            end
+
+            break
+          else
+            sleep(0.5)
+          end
+        end
+      end
     end
 
     def update
       Log.debug { "Update function called for #{@id}" }
-    end
-
-    def settings?(key : String, default_value = JSON::Any.new(nil))
-      bindings = Registry.instance.registered_bindings.reject do |binding|
-        binding.id != @id
-      end
-
-      binding = bindings.first
-
-      if value = binding.metadata.settings[key]?
-        value
-      else
-        default_value
-      end
     end
 
     macro inherited
@@ -61,28 +75,49 @@ module MonkeyShoulder
           {{@type.id}}.instance.{{method.name}}
         {% end %}
 
+        connection do |redis|
+          redis.set(@id, binding.metadata.settings.to_json)
+        end
+
         binding.metadata.settings
       end
 
       @[Annotations::BuiltInMethod]
-      def settings(array : Array(Hash(String, JSON::Any)))
+      def setting?(key : String)
         bindings = Registry.instance.registered_bindings.reject do |binding|
           binding.id != @id
         end
 
         binding = bindings.first
 
-        array.each do |pair|
-          binding.metadata.settings[pair.keys.first] = pair.values.first
+        settings = connection do |redis|
+          next redis.get(@id)
         end
 
-        {% update_methods = @type.methods.select {|m| m.annotation(MonkeyShoulder::Annotations::UpdateMethod) } %}
+        if binding.metadata.settings.to_json != settings
+          raise Exception.new("Out of sync settings")
+        else
+          binding.metadata.settings[key]?
+        end
+      end
 
-        {% for method in update_methods %}
-          {{@type.id}}.instance.{{method.name}}
-        {% end %}
+      @[Annotations::BuiltInMethod]
+      def settings?
+        bindings = Registry.instance.registered_bindings.reject do |binding|
+          binding.id != @id
+        end
 
-        binding.metadata.settings
+        binding = bindings.first
+
+        settings = connection do |redis|
+          next redis.get(@id)
+        end
+
+        if binding.metadata.settings.to_json != settings
+          raise Exception.new("Out of sync settings")
+        else
+          binding.metadata.settings
+        end
       end
     end
 
@@ -107,7 +142,7 @@ module MonkeyShoulder
 
               # Support argument lists
               if json.raw.is_a?(Array)
-                arg_names = { {{*args.map(&.name.stringify)}} }
+                arg_names = { {{args.map(&.name.stringify).splat}} }
                 args = json.as_a
 
                 raise "wrong number of arguments for '#{{{method.name.stringify}}}' (given #{args.size}, expected #{arg_names.size})" if args.size > arg_names.size
@@ -168,7 +203,8 @@ module MonkeyShoulder
 
               # Support argument lists
               if json.raw.is_a?(Array)
-                arg_names = { {{*args.map(&.name.stringify)}} }
+                arg_names = { {{args.map(&.name.stringify).splat}} }
+
                 args = json.as_a
 
                 raise "wrong number of arguments for '#{{{method.name.stringify}}}' (given #{args.size}, expected #{arg_names.size})" if args.size > arg_names.size
@@ -229,7 +265,7 @@ module MonkeyShoulder
 
               # Support argument lists
               if json.raw.is_a?(Array)
-                arg_names = { {{*args.map(&.name.stringify)}} }
+                arg_names = { {{args.map(&.name.stringify).splat}} }
                 args = json.as_a
 
                 raise "wrong number of arguments for '#{{{method.name.stringify}}}' (given #{args.size}, expected #{arg_names.size})" if args.size > arg_names.size
@@ -280,40 +316,43 @@ module MonkeyShoulder
         redis.subscribe id do |on|
           on.message do |channel, message|
             message = MonkeyShoulder::Models::Message.from_json(message)
+            class_name = message.class_name.to_s.gsub("::", ".")
 
-            begin
-              case message.type
-              when "MAINTENANCE"
-                id = [@id, ".", message.class_name, ".", message.method_name].join
-                proxy = MAINTENANCE_EXECUTORS[message.method_name]
-                return_value = proxy.try(&.call(JSON.parse(message.arguments.to_json)))
+            spawn do
+              begin
+                case message.type
+                when "MAINTENANCE"
+                  id = [@id, ".", class_name, ".", message.method_name].join
+                  proxy = MAINTENANCE_EXECUTORS[message.method_name]
+                  return_value = proxy.try(&.call(JSON.parse(message.arguments.to_json)))
 
-                connection do |redis|
-                  redis.publish(id, {"eTag" => message.execution_tag, "body" => {"success" => true, "errors" => [] of String, "returnValue" => return_value}}.to_json)
+                  connection do |redis|
+                    redis.publish(id, {"eTag" => message.entity_tag, "body" => {"success" => true, "errors" => [] of String, "returnValue" => return_value}}.to_json)
+                  end
+                when "BUILTIN"
+                  id = [@id, ".", class_name, ".", message.method_name].join
+                  proxy = BUILTIN_EXECUTORS[message.method_name]
+                  return_value = proxy.try(&.call(JSON.parse(message.arguments.to_json)))
+
+                  connection do |redis|
+                    redis.publish(id, {"eTag" => message.entity_tag, "body" => {"success" => true, "errors" => [] of String, "returnValue" => return_value}}.to_json)
+                  end
+                when "EXTERNAL"
+                  id = [@id, ".", class_name, ".", message.method_name].join
+                  proxy = EXTERNAL_EXECUTORS[message.method_name]
+                  return_value = proxy.try(&.call(JSON.parse(message.arguments.to_json)))
+
+                  connection do |redis|
+                    redis.publish(id, {"eTag" => message.entity_tag, "body" => {"success" => true, "errors" => [] of String, "returnValue" => return_value}}.to_json)
+                  end
                 end
-              when "BUILTIN"
-                id = [@id, ".", message.class_name, ".", message.method_name].join
-                proxy = BUILTIN_EXECUTORS[message.method_name]
-                return_value = proxy.try(&.call(JSON.parse(message.arguments.to_json)))
-
+              rescue exception
                 connection do |redis|
-                  redis.publish(id, {"eTag" => message.execution_tag, "body" => {"success" => true, "errors" => [] of String, "returnValue" => return_value}}.to_json)
+                  redis.publish(id, {"eTag" => message.entity_tag, "body" => {"success" => false, "errors" => [exception.message.to_s.gsub("\"", "'")] of String, "returnValue" => nil}})
                 end
-              when "EXTERNAL"
-                id = [@id, ".", message.class_name, ".", message.method_name].join
-                proxy = EXTERNAL_EXECUTORS[message.method_name]
-                return_value = proxy.try(&.call(JSON.parse(message.arguments.to_json)))
 
-                connection do |redis|
-                  redis.publish(id, {"eTag" => message.execution_tag, "body" => {"success" => true, "errors" => [] of String, "returnValue" => return_value}}.to_json)
-                end
+                Log.error(exception: exception) {}
               end
-            rescue exception
-              connection do |redis|
-                redis.publish(id, {"eTag" => message.execution_tag, "body" => {"success" => false, "errors" => [exception.message.to_s.gsub("\"", "'")] of String, "returnValue" => nil}})
-              end
-
-              Log.error(exception: exception) {}
             end
           end
         end
@@ -323,8 +362,10 @@ module MonkeyShoulder
 
       private def connection
         redis = Redis.new
-        yield redis
+        value = yield redis
         redis.close()
+
+        value
       end
     end
   end

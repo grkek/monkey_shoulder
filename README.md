@@ -1,6 +1,6 @@
 # Monkey Shoulder
 
-Monkey Shoulder is a library for exposing functions over WebSockets.
+Monkey Shoulder is a library for exposing functions over WebSockets asynchronously.
 
 ## Installation
 
@@ -51,7 +51,7 @@ Run the server and connect to it using a WebSocket client at 'ws://localhost:400
 {
     "eTag": "00000000-0000-0000-0000-000000000000",
     "body": {
-        "methodName": "listBindings"
+        "instructionName": "listBindings"
     }
 }
 ```
@@ -63,7 +63,7 @@ Send this payload to get all the bindnings, select the one above and use the ID 
     "eTag": "00000000-0000-0000-0000-000000000000",
     "body": {
         "id": "BINDING_ID",
-        "methodName": "executeMethod",
+        "instructionName": "executeMethod",
         "sourceCode": {
             "methodName": "multiply",
             "type": "EXTERNAL",

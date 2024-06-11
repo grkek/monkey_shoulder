@@ -1,5 +1,5 @@
 name: monkey_shoulder
-version: 0.1.0
+version: 0.2.0
 
 authors:
   - Giorgi Kavrelishvili <giorgi.kavrelishvili@pm.me>
@@ -7,7 +7,6 @@ authors:
 dependencies:
   grip:
     github: grip-framework/grip
-    branch: core
 
   redis:
     github: stefanwille/crystal-redis

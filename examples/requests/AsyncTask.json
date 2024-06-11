@@ -1,0 +1,12 @@
+{
+    "eTag": "00000000-1234-5678-0000-000000000000",
+    "body": {
+        "id": "57e6f4748ef549caac89496a417fac61a88f8690",
+        "instructionName": "executeMethod",
+        "sourceCode": {
+            "type": "EXTERNAL",
+            "methodName": "asyncTask",
+            "arguments": {}
+        }
+    }
+}

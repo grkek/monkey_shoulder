@@ -4,7 +4,7 @@ module MonkeyShoulder
       include JSON::Serializable
 
       @[JSON::Field(key: "eTag")]
-      property execution_tag : String?
+      property entity_tag : String?
 
       @[JSON::Field(key: "className")]
       property class_name : String?
