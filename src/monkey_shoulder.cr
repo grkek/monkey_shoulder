@@ -59,7 +59,7 @@ module MonkeyShoulder
         __external_methods__[method_name] = args.as(Array(Hash(String, String)))
       {% end %}
 
-      MonkeyShoulder::Registry.instance.register_binding({{subclass}}, {"maintenanceMethods" => __maintenance_methods__, "builtInMethods" => __built_in_methods__, "externalMethods" => __external_methods__, "className" => {{subclass.name.stringify}}, "settings" => {} of String => JSON::Any})
+      MonkeyShoulder::Registry.instance.register_binding({{subclass}}, {"maintenanceMethods" => __maintenance_methods__, "builtInMethods" => __built_in_methods__, "externalMethods" => __external_methods__, "className" => {{subclass.name.stringify}}.gsub("::", "."), "settings" => {} of String => JSON::Any})
     {% end %}
   end
 end
