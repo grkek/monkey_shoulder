@@ -1,47 +1,50 @@
 require "../src/application"
 
+require "uuid"
+require "socket"
+require "http/client"
+
 module Linus
-  class ZB18A < MonkeyShoulder::Binding
-    @[Annotations::ExternalMethod]
+  PORT = 5995
+
+  class Client
+    def initialize(@api_key : String)
+    end
+
+    def status
+      response = HTTP::Client.get(url: "http://0.0.0.0:4004/status", headers: HTTP::Headers{"Authorization" => "Bearer #{@api_key}"})
+      raise Exception.new("unexpected response #{response.status_code}\n#{response.body}") unless response.success?
+
+      JSON.parse(response.body)
+    end
+
     def increase_brightness
-      brightness_level = setting?("brightnessLevel")
+      response = HTTP::Client.post(url: "http://0.0.0.0:4004/increaseBrightness", headers: HTTP::Headers{"Authorization" => "Bearer #{@api_key}"})
+      raise Exception.new("unexpected response #{response.status_code}\n#{response.body}") unless response.success?
 
-      if brightness_level
-        current_level = brightness_level.as_i
-
-        if current_level >= 100
-          raise Exception.new("Can not set brightness level to more than 100")
-        end
-
-        actual_level = current_level + 1
-
-        setting("brightnessLevel", JSON::Any.new(actual_level))
-      else
-        setting("brightnessLevel", JSON::Any.new(1))
-
-        1
-      end
+      JSON.parse(response.body)
     end
   end
-end
 
-module Samsung
-  class TV1B1RD5 < MonkeyShoulder::Binding
-    @[Annotations::ExternalMethod]
-    def async_task
-      sleep(60)
-      puts "Async task has finished"
+  class ZB18A < MonkeyShoulder::Binding
+    @brightness_level : Int32 = 0
+
+    getter! client : Client
+
+    def start
+    end
+
+    def update
+      api_key = setting?("apiKey", JSON::Any.new("e30=")).as_s
+
+      @client = Client.new(api_key)
     end
 
     @[Annotations::ExternalMethod]
-    def off
-      setting("isOn", JSON::Any.new(false))
-      setting("isOff", JSON::Any.new(true))
-    end
+    def display_client
+      pp @client
 
-    @[Annotations::ExternalMethod]
-    def print(text : String)
-      puts text
+      "Hello, World!"
     end
   end
 end

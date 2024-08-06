@@ -10,6 +10,8 @@ module MonkeyShoulderWeb
       def on_open(context : Context, socket : Socket) : Void
         @sockets.push(socket)
 
+        Log.debug { "Client connected." }
+
         MonkeyShoulder::Registry.instance.registered_bindings.each do |binding|
           methods = [] of String
 
@@ -33,6 +35,8 @@ module MonkeyShoulderWeb
                   on.message do |channel, message|
                     if message == "unsubscribeHandler"
                       @handlers.delete(handler)
+
+                      Log.debug { "Handler '#{handler}' has been unregistered." }
 
                       # A bug with the library, when I want to quit the cycle it crashes with a TypeCastError,
                       # this is a little workaround.
