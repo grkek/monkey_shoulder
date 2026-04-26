@@ -41,15 +41,20 @@ end
 
 Log.setup(:debug)
 
-app = MonkeyShoulder::Application.new(host: "0.0.0.0", port: 4000)
-app.run
+
+launcher = MonkeyShoulder::Launcher.new
+
+launcher.application.host = "0.0.0.0"
+launcher.application.port = 4004
+
+launcher.run
 ```
 
 Run the server and connect to it using a WebSocket client at 'ws://localhost:4000/ws/socket'
 
 ```json
 {
-    "eTag": "00000000-0000-0000-0000-000000000000",
+    "entityTag": "00000000-0000-0000-0000-000000000000",
     "body": {
         "instructionName": "listBindings"
     }
@@ -60,7 +65,7 @@ Send this payload to get all the bindnings, select the one above and use the ID 
 
 ```json
 {
-    "eTag": "00000000-0000-0000-0000-000000000000",
+    "entityTag": "00000000-0000-0000-0000-000000000000",
     "body": {
         "id": "BINDING_ID",
         "instructionName": "executeMethod",
@@ -73,7 +78,7 @@ Send this payload to get all the bindnings, select the one above and use the ID 
 }
 ```
 
-Send this payload to the server and it will return the result, you can use the eTag value to track responses from the server.
+Send this payload to the server and it will return the result, you can use the `entityTag` value to track responses from the server.
 
 
 ## Contributing

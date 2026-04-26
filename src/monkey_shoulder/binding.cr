@@ -33,7 +33,7 @@ module MonkeyShoulder
 
             break
           else
-            sleep(0.5)
+            sleep(0.5.seconds)
           end
         end
 
@@ -307,26 +307,26 @@ module MonkeyShoulder
                   return_value = proxy.try(&.call(JSON.parse(message.arguments.to_json)))
 
                   yield_redis do |redis|
-                    redis.publish(id, {"eTag" => message.entity_tag, "body" => {"success" => true, "errors" => [] of String, "returnValue" => return_value}}.to_json)
+                    redis.publish(id, {"entityTag" => message.entity_tag, "body" => {"success" => true, "returnValue" => return_value}}.to_json)
                   end
                 when "BUILTIN"
                   proxy = BUILTIN_EXECUTORS[message.method_name]
                   return_value = proxy.try(&.call(JSON.parse(message.arguments.to_json)))
 
                   yield_redis do |redis|
-                    redis.publish(id, {"eTag" => message.entity_tag, "body" => {"success" => true, "errors" => [] of String, "returnValue" => return_value}}.to_json)
+                    redis.publish(id, {"entityTag" => message.entity_tag, "body" => {"success" => true, "returnValue" => return_value}}.to_json)
                   end
                 when "EXTERNAL"
                   proxy = EXTERNAL_EXECUTORS[message.method_name]
                   return_value = proxy.try(&.call(JSON.parse(message.arguments.to_json)))
 
                   yield_redis do |redis|
-                    redis.publish(id, {"eTag" => message.entity_tag, "body" => {"success" => true, "errors" => [] of String, "returnValue" => return_value}}.to_json)
+                    redis.publish(id, {"entityTag" => message.entity_tag, "body" => {"success" => true, "returnValue" => return_value}}.to_json)
                   end
                 end
               rescue exception
                 yield_redis do |redis|
-                  redis.publish(id, {"eTag" => message.entity_tag, "body" => {"success" => false, "errors" => [exception.message.to_s.gsub("\"", "'")] of String, "returnValue" => nil}})
+                  redis.publish(id, {"entityTag" => message.entity_tag, "body" => {"success" => false, "errors" => [exception.message.to_s.gsub("\"", "'")] of String}}.to_json)
                 end
 
                 Log.error(exception: exception) { "An error occured while executing #{id}" }

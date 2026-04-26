@@ -3,7 +3,7 @@ module MonkeyShoulder
     class Response
       include JSON::Serializable
 
-      @[JSON::Field(key: "eTag")]
+      @[JSON::Field(key: "entityTag")]
       property entity_tag : String
 
       @[JSON::Field(key: "body")]

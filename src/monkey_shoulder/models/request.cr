@@ -3,7 +3,7 @@ module MonkeyShoulder
     class Request
       include JSON::Serializable
 
-      @[JSON::Field(key: "eTag")]
+      @[JSON::Field(key: "entityTag")]
       property entity_tag : String
 
       @[JSON::Field(key: "body")]

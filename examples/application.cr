@@ -1,4 +1,4 @@
-require "../src/application"
+require "../src/launcher"
 
 require "uuid"
 require "socket"
@@ -12,14 +12,14 @@ module Linus
     end
 
     def status
-      response = HTTP::Client.get(url: "http://0.0.0.0:4004/status", headers: HTTP::Headers{"Authorization" => "Bearer #{@api_key}"})
+      response = HTTP::Client.get(url: "http://0.0.0.0:#{PORT}/status", headers: HTTP::Headers{"Authorization" => "Bearer #{@api_key}"})
       raise Exception.new("unexpected response #{response.status_code}\n#{response.body}") unless response.success?
 
       JSON.parse(response.body)
     end
 
     def increase_brightness
-      response = HTTP::Client.post(url: "http://0.0.0.0:4004/increaseBrightness", headers: HTTP::Headers{"Authorization" => "Bearer #{@api_key}"})
+      response = HTTP::Client.post(url: "http://0.0.0.0:#{PORT}/increaseBrightness", headers: HTTP::Headers{"Authorization" => "Bearer #{@api_key}"})
       raise Exception.new("unexpected response #{response.status_code}\n#{response.body}") unless response.success?
 
       JSON.parse(response.body)
@@ -51,5 +51,9 @@ end
 
 Log.setup(:debug)
 
-app = MonkeyShoulder::Application.new(host: "0.0.0.0", port: 4000)
-app.run
+launcher = MonkeyShoulder::Launcher.new
+
+launcher.application.host = "0.0.0.0"
+launcher.application.port = 4004
+
+launcher.run
